@@ -69,7 +69,9 @@
             :class="{ active: isFav }"
             @click="toggleFav"
           >
-            <span class="fav-icon">{{ isFav ? '❤️' : '🤍' }}</span>
+            <svg class="fav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
             <span class="fav-text">{{ isFav ? '已收藏' : '收藏' }}</span>
           </div>
         </div>
@@ -174,8 +176,9 @@ const goBack = () => {
 }
 
 const toggleFav = () => {
+  const willBeFavorite = !isFav.value
   store.toggleFavorite(route.params.id)
-  showToast(isFav.value ? '已加入收藏' : '已取消收藏')
+  showToast(willBeFavorite ? '已加入收藏' : '已取消收藏')
 }
 
 const onShare = () => {
@@ -462,7 +465,10 @@ const formatTime = (time) => {
     transition: all 0.2s ease;
 
     .fav-icon {
-      font-size: 20px;
+      width: 22px;
+      height: 22px;
+      color: #ccc;
+      transition: all 0.2s ease;
     }
 
     .fav-text {
@@ -473,6 +479,12 @@ const formatTime = (time) => {
     &.active {
       background: #ffe8d6;
 
+      .fav-icon {
+        color: #ff7a2e;
+        fill: #ff7a2e;
+        animation: heartBeat 0.3s ease;
+      }
+
       .fav-text {
         color: #ff7a2e;
       }
@@ -481,6 +493,12 @@ const formatTime = (time) => {
     &:active {
       transform: scale(0.95);
     }
+  }
+
+  @keyframes heartBeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+    100% { transform: scale(1); }
   }
 }
 

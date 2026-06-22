@@ -252,6 +252,14 @@ export const useStore = () => {
     return list.sort((a, b) => b.publishTime - a.publishTime)
   })
 
+  const favoriteProducts = computed(() => {
+    return state.products.filter(p => state.favorites.includes(p.id))
+  })
+
+  const myPublishedProducts = computed(() => {
+    return state.products.filter(p => state.myPublished.includes(p.id))
+  })
+
   const getProductById = (id) => {
     return state.products.find(p => p.id === Number(id))
   }
@@ -261,20 +269,21 @@ export const useStore = () => {
   }
 
   const toggleFavorite = (id) => {
-    const idx = state.favorites.indexOf(Number(id))
+    const numId = Number(id)
+    const idx = state.favorites.indexOf(numId)
     if (idx > -1) {
       state.favorites.splice(idx, 1)
     } else {
-      state.favorites.push(Number(id))
+      state.favorites.push(numId)
     }
   }
 
   const getFavoriteProducts = () => {
-    return state.products.filter(p => state.favorites.includes(p.id))
+    return favoriteProducts.value
   }
 
   const getMyPublished = () => {
-    return state.products.filter(p => state.myPublished.includes(p.id))
+    return myPublishedProducts.value
   }
 
   const addProduct = (product) => {
@@ -321,6 +330,8 @@ export const useStore = () => {
   return {
     state,
     filteredProducts,
+    favoriteProducts,
+    myPublishedProducts,
     getProductById,
     isFavorite,
     toggleFavorite,
