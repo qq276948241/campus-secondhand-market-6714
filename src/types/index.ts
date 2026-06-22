@@ -1,34 +1,40 @@
-export interface User {
-  id: string
-  name: string
-  avatar: string
-  phone: string
-  wechat: string
-}
-
-export interface Seller {
-  id: string
-  name: string
-  avatar: string
-  phone: string
-  wechat: string
-}
+export type ProductCategory = '全部' | '数码电子' | '图书教材' | '生活用品' | '服饰鞋包' | '美妆护肤' | '运动户外' | '其他'
 
 export interface Product {
   id: string
   title: string
   description: string
   price: number
-  category: string
+  category: ProductCategory
   images: string[]
-  seller: Seller
+  sellerId: string
+  sellerName: string
+  sellerAvatar: string
+  contact: string
   createdAt: string
-  views: number
-  isMyPublish?: boolean
 }
 
-export interface Category {
+export interface User {
   id: string
   name: string
-  icon: string
+  avatar: string
+  contact: string
 }
+
+export interface Favorite {
+  id: string
+  productId: string
+  userId: string
+  createdAt: string
+}
+
+export const CATEGORIES: ProductCategory[] = [
+  '全部',
+  '数码电子',
+  '图书教材',
+  '生活用品',
+  '服饰鞋包',
+  '美妆护肤',
+  '运动户外',
+  '其他',
+]

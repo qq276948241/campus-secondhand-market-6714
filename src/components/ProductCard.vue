@@ -1,46 +1,86 @@
+<script setup lang="ts">
+import { useRouter } from 'vue-router'
+import { Heart } from 'lucide-vue-next'
+import type { Product } from '@/types'
+import { formatPrice, formatDate } from '@/utils/format'
+import { useFavoriteStore } from '@/stores/favorite'
+import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
+
+const props = defineProps<{
+  product: Product
+  showDelete?: boolean
+}>()
+
+const emit = defineEmits<{
+  delete: [id: string]
+}>()
+
+const router = useRouter()
+const favoriteStore = useFavoriteStore()
+const userStore = useUserStore()
+const { currentUser } = storeToRefs(userStore)
+
+function goToDetail() {
+  router.push(`/detail/${props.product.id}`)
+}
+
+function handleFavorite(event: Event) {
+  event.stopPropagation()
+  favoriteStore.toggleFavorite(props.product.id, currentUser.value.id)
+}
+
+function handleDelete(event: Event) {
+  event.stopPropagation()
+  emit('delete', props.product.id)
+}
+
+const isFavorited = () => favoriteStore.isFavorite(props.product.id, currentUser.value.id)
+</script>
+
 <template>
-  <router-link
-    :to="`/product/${product.id}`"
-    class="group block bg-white rounded-card shadow-card overflow-hidden hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300"
-  >
-    <div class="relative aspect-square bg-gray-100 overflow-hidden">
+  <div class="card cursor-pointer group" @click="goToDetail">
+    <div class="relative aspect-square overflow-hidden bg-gray-100">
       <img
         :src="product.images[0]"
         :alt="product.title"
-        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         loading="lazy"
       />
-      <div v-if="product.isMyPublish" class="absolute top-2 left-2 px-2 py-0.5 rounded bg-primary-500 text-white text-xs">
-        我的
+      <div class="absolute top-2 right-2 flex gap-2">
+        <button
+          v-if="showDelete"
+          class="w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center transition-colors hover:bg-red-500"
+          @click="handleDelete"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        </button>
+        <button
+          class="w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center transition-all active:scale-90"
+          :class="isFavorited() ? 'text-primary' : 'text-gray-400'"
+          @click="handleFavorite"
+        >
+          <Heart :size="16" :fill="isFavorited() ? 'currentColor' : 'none'" />
+        </button>
+      </div>
+      <div class="absolute bottom-2 left-2">
+        <span class="px-2 py-0.5 bg-white/90 backdrop-blur rounded-full text-xs text-gray-500">
+          {{ product.category }}
+        </span>
       </div>
     </div>
     <div class="p-3">
-      <h3 class="text-sm text-gray-800 line-clamp-2 leading-snug min-h-[2.5rem] mb-2 group-hover:text-primary-600 transition-colors">
+      <h3 class="text-sm font-medium text-gray-800 line-clamp-2 h-10 leading-5 mb-2">
         {{ product.title }}
       </h3>
       <div class="flex items-end justify-between">
-        <div class="flex items-baseline gap-0.5">
-          <span class="text-xs text-primary-500">¥</span>
-          <span class="text-lg font-bold text-primary-500">{{ product.price }}</span>
-        </div>
-        <div class="flex items-center gap-1 text-gray-400 text-xs">
-          <Eye class="w-3 h-3" />
-          <span>{{ product.views }}</span>
-        </div>
-      </div>
-      <div class="mt-2 flex items-center gap-1.5">
-        <img :src="product.seller.avatar" alt="seller" class="w-4 h-4 rounded-full object-cover" />
-        <span class="text-xs text-gray-500 truncate">{{ product.seller.name }}</span>
+        <span class="text-lg font-bold text-primary">
+          {{ formatPrice(product.price) }}
+        </span>
+        <span class="text-xs text-gray-400">
+          {{ formatDate(product.createdAt) }}
+        </span>
       </div>
     </div>
-  </router-link>
+  </div>
 </template>
-
-<script setup lang="ts">
-import { Eye } from 'lucide-vue-next'
-import type { Product } from '@/types'
-
-defineProps<{
-  product: Product
-}>()
-</script>

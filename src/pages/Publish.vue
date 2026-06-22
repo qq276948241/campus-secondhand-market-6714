@@ -1,287 +1,220 @@
-<template>
-  <div class="min-h-screen bg-gray-50 pb-24">
-    <Header />
-    <main class="max-w-2xl mx-auto pt-20 pb-8 px-4">
-      <h1 class="text-xl font-bold text-gray-800 mb-5">发布商品</h1>
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { ArrowLeft, Tag, DollarSign, AlignLeft, Image, ChevronDown } from 'lucide-vue-next'
+import ImageUpload from '@/components/ImageUpload.vue'
+import { CATEGORIES, type ProductCategory } from '@/types'
+import { useProductStore } from '@/stores/product'
+import { useUserStore } from '@/stores/user'
 
-      <form @submit.prevent="handleSubmit" class="space-y-5">
-        <div class="bg-white rounded-card p-4 md:p-5">
-          <label class="block text-sm font-medium text-gray-700 mb-3">
-            商品图片 <span class="text-primary-500">*</span>
-            <span class="text-gray-400 font-normal ml-1">(最多9张)</span>
-          </label>
-          <ImageUpload v-model="form.images" />
-          <p v-if="errors.images" class="mt-2 text-sm text-red-500">{{ errors.images }}</p>
+const router = useRouter()
+const productStore = useProductStore()
+const userStore = useUserStore()
+const { currentUser } = storeToRefs(userStore)
+
+const images = ref<string[]>([])
+const title = ref('')
+const description = ref('')
+const price = ref('')
+const category = ref<ProductCategory>('数码电子')
+const showCategoryPicker = ref(false)
+const isSubmitting = ref(false)
+
+const categoriesWithoutAll = computed(() => CATEGORIES.filter((c) => c !== '全部'))
+
+const canSubmit = computed(() => {
+  return (
+    images.value.length > 0 &&
+    title.value.trim().length >= 2 &&
+    description.value.trim().length >= 5 &&
+    parseFloat(price.value) > 0
+  )
+})
+
+function goBack() {
+  router.back()
+}
+
+function toggleCategoryPicker() {
+  showCategoryPicker.value = !showCategoryPicker.value
+}
+
+function selectCategory(cat: ProductCategory) {
+  category.value = cat
+  showCategoryPicker.value = false
+}
+
+async function handleSubmit() {
+  if (!canSubmit.value || isSubmitting.value) return
+
+  isSubmitting.value = true
+
+  try {
+    productStore.addProduct({
+      title: title.value.trim(),
+      description: description.value.trim(),
+      price: parseFloat(price.value),
+      category: category.value,
+      images: images.value,
+      sellerId: currentUser.value.id,
+      sellerName: currentUser.value.name,
+      sellerAvatar: currentUser.value.avatar,
+      contact: currentUser.value.contact,
+    })
+
+    alert('发布成功！')
+    router.push('/profile')
+  } catch (error) {
+    alert('发布失败，请重试')
+  } finally {
+    isSubmitting.value = false
+  }
+}
+</script>
+
+<template>
+  <div class="min-h-screen bg-gray-50 pb-8">
+    <header class="sticky top-0 z-40 bg-white border-b border-gray-100">
+      <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+        <button
+          class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center transition-all active:scale-95"
+          @click="goBack"
+        >
+          <ArrowLeft :size="20" />
+        </button>
+        <h1 class="text-lg font-medium text-gray-800">发布商品</h1>
+        <div class="w-10" />
+      </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <div class="bg-white rounded-card p-5 shadow-card">
+        <div class="flex items-center gap-2 mb-4">
+          <Image :size="20" class="text-primary" />
+          <h3 class="font-medium text-gray-800">商品图片</h3>
+          <span class="text-xs text-gray-400">（最多9张）</span>
+        </div>
+        <ImageUpload v-model="images" :max="9" />
+      </div>
+
+      <div class="bg-white rounded-card p-5 shadow-card space-y-5">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <Tag :size="20" class="text-primary" />
+            <h3 class="font-medium text-gray-800">商品标题</h3>
+          </div>
+          <input
+            v-model="title"
+            type="text"
+            placeholder="请输入商品标题，最多50字"
+            class="input-field"
+            maxlength="50"
+          />
+          <p class="text-right text-xs text-gray-400 mt-1">{{ title.length }} / 50</p>
         </div>
 
-        <div class="bg-white rounded-card p-4 md:p-5 space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              商品标题 <span class="text-primary-500">*</span>
-            </label>
-            <input
-              v-model="form.title"
-              type="text"
-              placeholder="请输入商品标题，如：九成新 MacBook Pro"
-              maxlength="50"
-              class="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all"
-            />
-            <div class="flex justify-between mt-1">
-              <p v-if="errors.title" class="text-sm text-red-500">{{ errors.title }}</p>
-              <span v-else class="text-xs text-gray-400"></span>
-              <span class="text-xs text-gray-400">{{ form.title.length }}/50</span>
-            </div>
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <AlignLeft :size="20" class="text-primary" />
+            <h3 class="font-medium text-gray-800">商品描述</h3>
           </div>
+          <textarea
+            v-model="description"
+            placeholder="请详细描述商品成色、使用情况、转手原因等"
+            class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-primary focus:outline-none transition-colors resize-none"
+            rows="4"
+            maxlength="500"
+          />
+          <p class="text-right text-xs text-gray-400 mt-1">{{ description.length }} / 500</p>
+        </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              商品分类 <span class="text-primary-500">*</span>
-            </label>
-            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            <h3 class="font-medium text-gray-800">商品分类</h3>
+          </div>
+          <div class="relative">
+            <button
+              class="w-full px-4 py-3 border border-gray-200 rounded-lg flex items-center justify-between transition-colors focus:border-primary"
+              type="button"
+              @click="toggleCategoryPicker"
+            >
+              <span :class="category ? 'text-gray-800' : 'text-gray-400'">
+                {{ category || '请选择分类' }}
+              </span>
+              <ChevronDown :size="20" class="text-gray-400 transition-transform" :class="{ 'rotate-180': showCategoryPicker }" />
+            </button>
+
+            <div
+              v-if="showCategoryPicker"
+              class="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg z-10 max-h-60 overflow-y-auto"
+            >
               <button
-                v-for="cat in categoryOptions"
-                :key="cat.id"
+                v-for="cat in categoriesWithoutAll"
+                :key="cat"
+                class="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                :class="{ 'text-primary bg-primary-50': category === cat }"
                 type="button"
-                @click="form.category = cat.id"
-                class="h-10 rounded-lg text-sm border transition-all"
-                :class="form.category === cat.id
-                  ? 'border-primary-500 bg-primary-50 text-primary-600 font-medium'
-                  : 'border-gray-200 text-gray-600 hover:border-primary-300 hover:text-primary-500'"
+                @click="selectCategory(cat)"
               >
-                {{ cat.name }}
+                {{ cat }}
               </button>
             </div>
-            <p v-if="errors.category" class="mt-2 text-sm text-red-500">{{ errors.category }}</p>
           </div>
+        </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              商品价格 <span class="text-primary-500">*</span>
-            </label>
-            <div class="relative">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">¥</span>
-              <input
-                v-model="form.price"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                class="w-full h-11 pl-8 pr-4 rounded-lg border border-gray-200 text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all"
-              />
-            </div>
-            <p v-if="errors.price" class="mt-1 text-sm text-red-500">{{ errors.price }}</p>
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <DollarSign :size="20" class="text-primary" />
+            <h3 class="font-medium text-gray-800">商品价格</h3>
           </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              商品描述 <span class="text-primary-500">*</span>
-            </label>
-            <textarea
-              v-model="form.description"
-              placeholder="详细描述商品的成色、使用情况、购买渠道等信息..."
-              rows="5"
-              maxlength="500"
-              class="w-full px-4 py-3 rounded-lg border border-gray-200 text-sm resize-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all"
+          <div class="flex items-center">
+            <span class="text-xl font-bold text-primary mr-2">¥</span>
+            <input
+              v-model="price"
+              type="number"
+              placeholder="0.00"
+              min="0"
+              step="0.01"
+              class="input-field flex-1 text-xl font-bold text-gray-800"
             />
-            <div class="flex justify-between mt-1">
-              <p v-if="errors.description" class="text-sm text-red-500">{{ errors.description }}</p>
-              <span v-else class="text-xs text-gray-400"></span>
-              <span class="text-xs text-gray-400">{{ form.description.length }}/500</span>
-            </div>
           </div>
         </div>
+      </div>
 
-        <div class="bg-white rounded-card p-4 md:p-5">
-          <h3 class="text-sm font-medium text-gray-700 mb-3">联系方式（默认使用您的资料）</h3>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs text-gray-500 mb-1">手机号</label>
-              <input
-                v-model="form.phone"
-                type="text"
-                class="w-full h-10 px-3 rounded-lg border border-gray-200 text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all"
-              />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-500 mb-1">微信号</label>
-              <input
-                v-model="form.wechat"
-                type="text"
-                class="w-full h-10 px-3 rounded-lg border border-gray-200 text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all"
-              />
-            </div>
-          </div>
-          <p v-if="errors.contact" class="mt-2 text-sm text-red-500">{{ errors.contact }}</p>
-        </div>
-
-        <div class="pt-2">
-          <button
-            type="submit"
-            :disabled="submitting"
-            class="w-full h-12 rounded-full bg-primary-500 text-white font-medium text-base hover:bg-primary-600 disabled:bg-primary-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-          >
-            <Loader2 v-if="submitting" class="w-5 h-5 animate-spin" />
-            <span>{{ submitting ? '发布中...' : '立即发布' }}</span>
-          </button>
-        </div>
-      </form>
+      <div class="bg-blue-50 rounded-card p-4 text-blue-600 text-sm">
+        <p>📌 温馨提示：</p>
+        <ul class="mt-2 space-y-1 text-xs">
+          <li>• 请如实描述商品情况，避免交易纠纷</li>
+          <li>• 建议选择校园当面交易，更安全可靠</li>
+          <li>• 禁止发布违禁品、假冒伪劣商品</li>
+        </ul>
+      </div>
     </main>
 
-    <div
-      v-if="showSuccess"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-    >
-      <div class="w-[85%] max-w-sm bg-white rounded-2xl p-6 text-center">
-        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-          <Check class="w-8 h-8 text-green-600" />
-        </div>
-        <h3 class="text-lg font-semibold text-gray-800 mb-2">发布成功！</h3>
-        <p class="text-sm text-gray-500 mb-5">您的商品已成功上架，可在个人中心查看</p>
-        <div class="flex gap-3">
-          <button
-            @click="showSuccess = false; resetForm()"
-            class="flex-1 h-10 rounded-full border border-gray-200 text-gray-600 text-sm hover:bg-gray-50 transition-colors"
-          >
-            继续发布
-          </button>
-          <button
-            @click="goProfile"
-            class="flex-1 h-10 rounded-full bg-primary-500 text-white text-sm hover:bg-primary-600 transition-colors"
-          >
-            查看我的
-          </button>
-        </div>
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-40 md:hidden">
+      <div class="max-w-2xl mx-auto px-4 py-3">
+        <button
+          class="w-full btn-primary py-3 text-base"
+          :disabled="!canSubmit || isSubmitting"
+          :class="{ 'opacity-50 cursor-not-allowed': !canSubmit || isSubmitting }"
+          @click="handleSubmit"
+        >
+          {{ isSubmitting ? '发布中...' : '立即发布' }}
+        </button>
       </div>
     </div>
 
-    <BottomNav />
+    <div class="hidden md:block max-w-2xl mx-auto px-4 pb-6">
+      <button
+        class="w-full btn-primary py-3 text-base"
+        :disabled="!canSubmit || isSubmitting"
+        :class="{ 'opacity-50 cursor-not-allowed': !canSubmit || isSubmitting }"
+        @click="handleSubmit"
+      >
+        {{ isSubmitting ? '发布中...' : '立即发布' }}
+      </button>
+    </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { Loader2, Check } from 'lucide-vue-next'
-import Header from '@/components/Header.vue'
-import BottomNav from '@/components/BottomNav.vue'
-import ImageUpload from '@/components/ImageUpload.vue'
-import { categories, currentUser } from '@/data/mock'
-import { addMyProduct } from '@/utils/storage'
-import type { Product } from '@/types'
-
-const router = useRouter()
-
-const categoryOptions = categories.filter(c => c.id !== 'all')
-
-const form = reactive({
-  title: '',
-  description: '',
-  price: '',
-  category: '',
-  images: [] as string[],
-  phone: '',
-  wechat: ''
-})
-
-const errors = reactive({
-  title: '',
-  description: '',
-  price: '',
-  category: '',
-  images: '',
-  contact: ''
-})
-
-const submitting = ref(false)
-const showSuccess = ref(false)
-
-onMounted(() => {
-  form.phone = currentUser.phone
-  form.wechat = currentUser.wechat
-})
-
-function validate(): boolean {
-  let valid = true
-  Object.keys(errors).forEach(k => { (errors as any)[k] = '' })
-
-  if (form.images.length === 0) {
-    errors.images = '请至少上传一张商品图片'
-    valid = false
-  }
-  if (!form.title.trim()) {
-    errors.title = '请输入商品标题'
-    valid = false
-  } else if (form.title.trim().length < 5) {
-    errors.title = '标题至少5个字符'
-    valid = false
-  }
-  if (!form.category) {
-    errors.category = '请选择商品分类'
-    valid = false
-  }
-  if (!form.price || parseFloat(form.price) <= 0) {
-    errors.price = '请输入有效价格'
-    valid = false
-  }
-  if (!form.description.trim()) {
-    errors.description = '请输入商品描述'
-    valid = false
-  } else if (form.description.trim().length < 10) {
-    errors.description = '描述至少10个字符'
-    valid = false
-  }
-  if (!form.phone.trim() && !form.wechat.trim()) {
-    errors.contact = '请至少填写一种联系方式'
-    valid = false
-  }
-
-  return valid
-}
-
-function handleSubmit() {
-  if (!validate()) return
-
-  submitting.value = true
-
-  setTimeout(() => {
-    const now = new Date()
-    const pad = (n: number) => n.toString().padStart(2, '0')
-    const createdAt = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`
-
-    const newProduct: Product = {
-      id: `my_${Date.now()}`,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      price: parseFloat(form.price),
-      category: form.category,
-      images: form.images,
-      seller: {
-        id: currentUser.id,
-        name: currentUser.name,
-        avatar: currentUser.avatar,
-        phone: form.phone,
-        wechat: form.wechat
-      },
-      createdAt,
-      views: 0,
-      isMyPublish: true
-    }
-
-    addMyProduct(newProduct)
-    submitting.value = false
-    showSuccess.value = true
-  }, 800)
-}
-
-function resetForm() {
-  form.title = ''
-  form.description = ''
-  form.price = ''
-  form.category = ''
-  form.images = []
-}
-
-function goProfile() {
-  router.push('/profile')
-}
-</script>

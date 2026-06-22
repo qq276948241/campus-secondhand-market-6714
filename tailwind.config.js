@@ -1,33 +1,33 @@
 /** @type {import('tailwindcss').Config} */
+
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{vue,js,ts,jsx,tsx}",
-  ],
+  darkMode: "class",
+  content: ["./index.html", "./src/**/*.{js,ts,vue}"],
   theme: {
     extend: {
       colors: {
         primary: {
-          50: '#FFF5ED',
-          100: '#FFE8D6',
-          200: '#FFD4B8',
-          300: '#FFBA8A',
-          400: '#FFA366',
-          500: '#FF8C42',
-          600: '#E6732A',
-          700: '#CC5E1A',
-          800: '#A64910',
-          900: '#7F3708',
+          DEFAULT: '#FF7A45',
+          50: '#FFF1EB',
+          100: '#FFE0D0',
+          200: '#FFC2A1',
+          300: '#FFA372',
+          400: '#FF8543',
+          500: '#FF7A45',
+          600: '#E6632E',
+          700: '#CC4E1C',
+          800: '#B33A0E',
+          900: '#992A03',
         },
       },
-      boxShadow: {
-        card: '0 2px 12px rgba(0, 0, 0, 0.06)',
-        'card-hover': '0 8px 24px rgba(0, 0, 0, 0.1)',
-      },
       borderRadius: {
-        card: '12px',
+        'card': '12px',
+      },
+      boxShadow: {
+        'card': '0 2px 12px rgba(0, 0, 0, 0.06)',
+        'card-hover': '0 4px 20px rgba(0, 0, 0, 0.1)',
       },
     },
   },
   plugins: [],
-}
+};

@@ -1,30 +1,30 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '@/pages/Home.vue'
-import ProductDetail from '@/pages/ProductDetail.vue'
+import Detail from '@/pages/Detail.vue'
 import Publish from '@/pages/Publish.vue'
 import Profile from '@/pages/Profile.vue'
 
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: Home
+    name: 'home',
+    component: Home,
   },
   {
-    path: '/product/:id',
-    name: 'ProductDetail',
-    component: ProductDetail
+    path: '/detail/:id',
+    name: 'detail',
+    component: Detail,
   },
   {
     path: '/publish',
-    name: 'Publish',
-    component: Publish
+    name: 'publish',
+    component: Publish,
   },
   {
     path: '/profile',
-    name: 'Profile',
-    component: Profile
-  }
+    name: 'profile',
+    component: Profile,
+  },
 ]
 
 const router = createRouter({
@@ -32,7 +32,7 @@ const router = createRouter({
   routes,
   scrollBehavior() {
     return { top: 0 }
-  }
+  },
 })
 
 export default router
