@@ -5,11 +5,13 @@ import { ArrowLeft, Tag, FileText, DollarSign, Layers } from 'lucide-vue-next';
 import Header from '@/components/Header.vue';
 import BottomNav from '@/components/BottomNav.vue';
 import ImageUpload from '@/components/ImageUpload.vue';
-import { categories, currentUser } from '@/data/mock';
+import { useCategories } from '@/composables/useCategories';
+import { currentUser } from '@/data/mock';
 import { addMyProduct, generateId } from '@/utils/storage';
 import type { Product } from '@/types';
 
 const router = useRouter();
+const { selectableCategories, getCategoryById } = useCategories();
 
 const productName = ref('');
 const description = ref('');
@@ -17,10 +19,6 @@ const price = ref('');
 const categoryId = ref('');
 const images = ref<string[]>([]);
 const submitting = ref(false);
-
-const selectableCategories = computed(() => {
-  return categories.filter(c => c.id !== 'all');
-});
 
 const canSubmit = computed(() => {
   return productName.value.trim() &&
@@ -39,7 +37,7 @@ const handleSubmit = async () => {
 
   submitting.value = true;
 
-  const category = selectableCategories.value.find(c => c.id === categoryId.value);
+  const category = getCategoryById(categoryId.value);
 
   const product: Product = {
     id: generateId(),

@@ -1,15 +1,4 @@
-import type { Product, Category, User } from '@/types';
-
-export const categories: Category[] = [
-  { id: 'all', name: '全部', icon: 'grid' },
-  { id: 'digital', name: '数码电子', icon: 'smartphone' },
-  { id: 'books', name: '图书教材', icon: 'book-open' },
-  { id: 'clothing', name: '服饰鞋包', icon: 'shirt' },
-  { id: 'life', name: '生活用品', icon: 'home' },
-  { id: 'sports', name: '运动户外', icon: 'dumbbell' },
-  { id: 'food', name: '食品零食', icon: 'cookie' },
-  { id: 'other', name: '其他', icon: 'more-horizontal' },
-];
+import type { Product, User } from '@/types';
 
 export const currentUser: User = {
   id: 'user-001',
