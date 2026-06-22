@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '@/pages/HomePage.vue'
 import ProductDetail from '@/pages/ProductDetail.vue'
-import Publish from '@/pages/Publish.vue'
+import PublishPage from '@/pages/PublishPage.vue'
 import Profile from '@/pages/Profile.vue'
 
 const routes = [
@@ -18,7 +18,7 @@ const routes = [
   {
     path: '/publish',
     name: 'publish',
-    component: Publish,
+    component: PublishPage,
   },
   {
     path: '/profile',
