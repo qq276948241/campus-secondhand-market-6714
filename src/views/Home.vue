@@ -1,21 +1,99 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { mockProducts, categories, type Product } from '../data'
+import {
+  mockProducts,
+  categories,
+  sortOptions,
+  parseCreatedAt,
+  type Product,
+  type SortType
+} from '../data'
 
 const router = useRouter()
 const products = ref<Product[]>(mockProducts)
 const searchText = ref('')
 const activeCategory = ref('all')
+const minPrice = ref<string>('')
+const maxPrice = ref<string>('')
+const sortType = ref<SortType>('default')
+
+const priceRangeInvalid = computed(() => {
+  const lo = Number(minPrice.value)
+  const hi = Number(maxPrice.value)
+  if (!minPrice.value || !maxPrice.value) return false
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return false
+  return lo > hi
+})
 
 const filteredProducts = computed(() => {
-  return products.value.filter(p => {
+  const lo = minPrice.value === '' ? NaN : Number(minPrice.value)
+  const hi = maxPrice.value === '' ? NaN : Number(maxPrice.value)
+
+  let list = products.value.filter(p => {
     const matchCategory = activeCategory.value === 'all' || p.category === activeCategory.value
     const matchSearch = !searchText.value ||
       p.title.toLowerCase().includes(searchText.value.toLowerCase()) ||
       p.description.toLowerCase().includes(searchText.value.toLowerCase())
-    return matchCategory && matchSearch
+
+    let matchPrice = true
+    if (Number.isFinite(lo) && p.price < lo) matchPrice = false
+    if (Number.isFinite(hi) && p.price > hi) matchPrice = false
+    if (Number.isFinite(lo) && Number.isFinite(hi) && lo > hi) matchPrice = false
+
+    return matchCategory && matchSearch && matchPrice
   })
+
+  const sorted = [...list]
+  switch (sortType.value) {
+    case 'price-asc':
+      sorted.sort((a, b) => a.price - b.price || a.id - b.id)
+      break
+    case 'date-desc':
+      sorted.sort((a, b) => parseCreatedAt(b.createdAt) - parseCreatedAt(a.createdAt) || b.id - a.id)
+      break
+    default:
+      sorted.sort((a, b) => {
+        const scoreA = a.views * 10 + (a.collected ? 50 : 0) + a.id
+        const scoreB = b.views * 10 + (b.collected ? 50 : 0) + b.id
+        return scoreB - scoreA
+      })
+  }
+
+  return sorted
+})
+
+const activeFilterCount = computed(() => {
+  let n = 0
+  if (activeCategory.value !== 'all') n++
+  if (minPrice.value !== '' || maxPrice.value !== '') n++
+  if (sortType.value !== 'default') n++
+  if (searchText.value) n++
+  return n
+})
+
+const resetFilters = () => {
+  activeCategory.value = 'all'
+  minPrice.value = ''
+  maxPrice.value = ''
+  sortType.value = 'default'
+}
+
+const quickPrices: Array<{ label: string; min: number; max: number } | { label: string; min: number; max: null } | { label: string; min: null; max: number }> = [
+  { label: '50以内', min: null as any, max: 50 },
+  { label: '50-200', min: 50, max: 200 },
+  { label: '200-1000', min: 200, max: 1000 },
+  { label: '1000以上', min: 1000, max: null as any }
+]
+
+const applyQuickPrice = (qp: { min: number | null; max: number | null }) => {
+  minPrice.value = qp.min === null ? '' : String(qp.min)
+  maxPrice.value = qp.max === null ? '' : String(qp.max)
+}
+
+watch([minPrice, maxPrice], () => {
+  if (minPrice.value !== '' && Number(minPrice.value) < 0) minPrice.value = '0'
+  if (maxPrice.value !== '' && Number(maxPrice.value) < 0) maxPrice.value = '0'
 })
 
 const goDetail = (id: number) => {
@@ -57,6 +135,88 @@ const toggleCollect = (e: Event, product: Product) => {
         >
           <span class="cat-icon">{{ cat.icon }}</span>
           <span class="cat-name">{{ cat.name }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="filter-bar container">
+      <div class="filter-card">
+        <div class="price-range">
+          <div class="price-label">
+            <span class="price-label-icon">💰</span>
+            <span class="price-label-text">价格区间</span>
+          </div>
+          <div class="price-inputs">
+            <div class="price-input-wrap">
+              <span class="price-prefix">¥</span>
+              <input
+                v-model="minPrice"
+                type="number"
+                min="0"
+                step="1"
+                class="price-input"
+                placeholder="最低价"
+              />
+            </div>
+            <span class="price-divider">—</span>
+            <div class="price-input-wrap">
+              <span class="price-prefix">¥</span>
+              <input
+                v-model="maxPrice"
+                type="number"
+                min="0"
+                step="1"
+                class="price-input"
+                placeholder="最高价"
+              />
+            </div>
+          </div>
+          <div v-if="priceRangeInvalid" class="price-error">
+            ⚠️ 最低价不能大于最高价
+          </div>
+          <div class="quick-price-row">
+            <button
+              v-for="qp in quickPrices"
+              :key="qp.label"
+              class="quick-chip"
+              :class="{
+                active:
+                  (qp.min === null ? minPrice === '' : String(qp.min) === minPrice) &&
+                  (qp.max === null ? maxPrice === '' : String(qp.max) === maxPrice)
+              }"
+              @click="applyQuickPrice(qp as any)"
+            >
+              {{ qp.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="divider-row"></div>
+
+        <div class="sort-row">
+          <div class="sort-label">
+            <span class="sort-label-icon">📊</span>
+            <span>排序方式</span>
+          </div>
+          <div class="sort-chips">
+            <button
+              v-for="opt in sortOptions"
+              :key="opt.id"
+              class="sort-chip"
+              :class="{ active: sortType === opt.id }"
+              @click="sortType = opt.id"
+            >
+              <span class="sort-chip-icon">{{ opt.icon }}</span>
+              <span>{{ opt.name }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="activeFilterCount > 0" class="filter-footer">
+          <span class="active-filter-tip">已启用 {{ activeFilterCount }} 个筛选条件</span>
+          <button class="reset-btn" @click="resetFilters">
+            🔄 重置
+          </button>
         </div>
       </div>
     </section>
@@ -215,6 +375,210 @@ const toggleCollect = (e: Event, product: Product) => {
 .cat-item.active .cat-name {
   color: var(--primary);
   font-weight: 600;
+}
+
+.filter-bar {
+  padding-top: 14px;
+}
+
+.filter-card {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+}
+
+.price-label,
+.sort-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.price-label-icon,
+.sort-label-icon {
+  font-size: 16px;
+}
+
+.price-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.price-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  transition: all 0.2s;
+  border: 1.5px solid transparent;
+}
+
+.price-input-wrap:focus-within {
+  background: #fff;
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(255, 122, 45, 0.12);
+}
+
+.price-prefix {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.price-input {
+  flex: 1;
+  padding: 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 0;
+  -moz-appearance: textfield;
+}
+
+.price-input::-webkit-outer-spin-button,
+.price-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.price-input::placeholder {
+  color: var(--text-light);
+  font-weight: 400;
+}
+
+.price-divider {
+  color: var(--text-light);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.price-error {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #fff2f0;
+  border: 1px solid #ffd4cd;
+  border-radius: var(--radius-sm);
+  color: #d32f2f;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.quick-price-row {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quick-chip {
+  padding: 6px 14px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+  border: 1.5px solid transparent;
+}
+
+.quick-chip:active {
+  transform: scale(0.96);
+}
+
+.quick-chip.active {
+  background: var(--primary-bg);
+  color: var(--primary);
+  border-color: var(--primary-light);
+  font-weight: 600;
+}
+
+.divider-row {
+  height: 1px;
+  background: var(--border-light);
+  margin: 16px 0;
+}
+
+.sort-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sort-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  border: 1.5px solid transparent;
+}
+
+.sort-chip:active {
+  transform: scale(0.97);
+}
+
+.sort-chip-icon {
+  font-size: 14px;
+}
+
+.sort-chip.active {
+  background: linear-gradient(135deg, var(--primary-bg) 0%, #ffe4d0 100%);
+  color: var(--primary-dark);
+  border-color: var(--primary-light);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+.filter-footer {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.active-filter-tip {
+  font-size: 12px;
+  color: var(--primary-dark);
+  font-weight: 500;
+  background: var(--primary-bg);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #fff;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.reset-btn:active {
+  background: var(--bg);
+  color: var(--primary);
+  border-color: var(--primary-light);
 }
 
 .list-section {

@@ -18,6 +18,20 @@ export interface Product {
   collected: boolean
 }
 
+export type SortType = 'default' | 'price-asc' | 'date-desc'
+
+export interface SortOption {
+  id: SortType
+  name: string
+  icon: string
+}
+
+export const sortOptions: SortOption[] = [
+  { id: 'default', name: '综合', icon: '🔥' },
+  { id: 'price-asc', name: '价格↑', icon: '💰' },
+  { id: 'date-desc', name: '最新', icon: '🕒' }
+]
+
 export interface Category {
   id: string
   name: string
@@ -34,6 +48,15 @@ export const categories: Category[] = [
   { id: 'food', name: '零食饮料', icon: '🍜' },
   { id: 'other', name: '其他', icon: '📦' }
 ]
+
+export const parseCreatedAt = (dateStr: string): number => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr)
+  if (m) {
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getTime()
+  }
+  const t = new Date(dateStr).getTime()
+  return Number.isFinite(t) ? t : 0
+}
 
 const img = (seed: string) =>
   `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(seed)}&image_size=square`
