@@ -16,10 +16,13 @@ export function useProducts() {
     return allProducts.value.filter((p) => p.categoryId === categoryId)
   }
 
-  function searchProducts(keyword: string, categoryId: number = 0): Product[] {
+  function searchProducts(keyword: string, categoryId: number = 0, includeSold: boolean = false): Product[] {
     let result = categoryId === 0
       ? allProducts.value
       : allProducts.value.filter((p) => p.categoryId === categoryId)
+    if (!includeSold) {
+      result = result.filter((p) => !p.isSold)
+    }
     if (keyword.trim()) {
       const kw = keyword.trim().toLowerCase()
       result = result.filter(

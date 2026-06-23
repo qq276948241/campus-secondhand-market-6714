@@ -9,9 +9,10 @@ const { categories, searchProducts } = useProducts()
 const searchKeyword = ref('')
 const selectedCategory = ref(0)
 const showSearch = ref(false)
+const includeSold = ref(false)
 
 const filteredProducts = computed(() => {
-  return searchProducts(searchKeyword.value, selectedCategory.value)
+  return searchProducts(searchKeyword.value, selectedCategory.value, includeSold.value)
 })
 
 function selectCategory(id: number) {
@@ -79,6 +80,16 @@ function toggleSearch() {
           >
             {{ cat.name }}
           </button>
+        </div>
+        <div class="flex items-center justify-end pt-2 mt-1 border-t border-gray-100">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              v-model="includeSold"
+              type="checkbox"
+              class="w-4 h-4 text-brand-500 rounded border-gray-300 focus:ring-brand-500 focus:ring-offset-0"
+            />
+            <span class="text-xs text-gray-500">查看已售商品</span>
+          </label>
         </div>
       </div>
     </div>

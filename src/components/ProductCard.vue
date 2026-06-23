@@ -50,9 +50,9 @@ function timeAgo(dateStr: string): string {
       />
       <div
         v-if="product.isSold"
-        class="absolute inset-0 bg-black/40 flex items-center justify-center"
+        class="absolute inset-0 bg-brand-500/70 backdrop-blur-[1px] flex items-center justify-center"
       >
-        <span class="text-white font-bold text-lg">已售出</span>
+        <span class="text-white font-bold text-xl drop-shadow-sm">已售</span>
       </div>
       <span
         v-if="category"
